@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+  <link rel="stylesheet" type="text/css" href="./file/style.css" />
+
+
+  <head>
+   
+
+    <title>File host</title>
+  </head>
+
+  <body>
+
+	<% if( type == 'guest') { %>
+		<h1>you cant do anything</h1>
+	<% } else if( type == 'basic' ){ %>
+		<h1>welcolm Back user</h1>
+
+		<main>
+			<form
+			action="/"
+			enctype="multipart/form-data"
+			method="post"
+			id="select"
+			onsubmit="return check()"
+		  >
+			<div class="drop-zone" id="holder">
+			  <span class="drop-zone__prompt" id="txt"
+				>Drop file here or click to upload</span
+			  >
+			  <input
+				type="file"
+				name="upload"
+				id="files"
+				class="drop-zone__input"
+				multiple
+			  />
+			</div>
+	  
+			<input type="submit" value="upload" id="send" />
+		  </form>
+	  
+		  <div id="formFile"></div>
+	  
+		  <!-- 
+	  
+			  <input type="submit" value="Upload" id="click"/>
+		  -->
+	  
+		  <form action="/home/open" method="get" id="file">
+			<input type="hidden" id="Name2" value="" name="name" />
+		  </form>
+	  
+		  <div id="place"></div>
+
+		  <div id="allFiles"> </div>
+
+		</main>
+	
+		<main style="display:hidden; opacity: 0;">
+	<hr>
+		<label for="form">Change your username</label>
+	<form action="/basic/usernameChange" method="post">
+		<label for="password">Password:</label>
+	 <input type="password" name="password" value=""/>
+	<br>
+	<label for="N_username">New Username:</label>
+	 <input type="text" name="N_username" value=""/>
+	<br>
+	<input type="submit"value="Submit">
+	</form>
+	<hr>
+	<label for="form">Change your password</label>
+	<form action="/basic/passwordChange" method="post">
+		<label for="password">Password:</label>
+	 <input type="password" name="password" value=""/>
+	<br>
+	<label for="N_password">New Password:</label>
+	 <input type="text" name="N_password" value=""/>
+	<br>
+	<input type="submit"value="Submit">
+	</form>
+	
+	<label for="form">Delete a account</label>
+	<form action="/basic/softRemove" method="post">
+		<label for="password">Password:</label>
+	 <input type="password" name="password" value=""/>
+	<br>
+	<input type="submit"value="Submit">
+	</form>
+	</main>
+	
+	<% } else if( type == 'admin' ){ %>
+		<h1>you can do anything</h1>
+		<hr>
+	<iframe src="/basic/allData" width="" height=""></iframe>
+	<hr>
+	
+	<label for="form">Delete a account</label>
+	<form action="/admin/softRemove" method="post">
+		<label for="password">Password:</label>
+	 <input type="password" name="password" value=""/>
+	<br>
+	
+	<label for="B_username">Members Username:</label>
+	 <input type="text" name="p_username" value=""/>
+	<br>
+	
+	<label for="B_password">Members Password:</label>
+	 <input type="text" name="p_password" value=""/>
+	<br>
+	
+	
+	
+	<input type="submit"value="Submit">
+	</form>
+	<hr>
+	<label for="form">Restore a account</label>
+	<form action="/admin/restore" method="post">
+		<label for="password">Password:</label>
+	 <input type="password" name="password" value=""/>
+	<br>
+	
+	<label for="B_username">Members Username:</label>
+	 <input type="text" name="p_username" value=""/>
+	<br>
+	
+	<label for="B_password">Members Password:</label>
+	 <input type="text" name="p_password" value=""/>
+	<br>
+	
+	
+	
+	<input type="submit"value="Submit">
+	</form>
+	<hr>
+	<label for="form">Permenently Delete a account</label>
+	<form action="/admin/hardRemove" method="post">
+		<label for="password">Password:</label>
+	 <input type="password" name="password" value=""/>
+	<br>
+	
+	<label for="B_username">Members Username:</label>
+	 <input type="text" name="p_username" value=""/>
+	<br>
+	
+	<label for="B_password">Members Password:</label>
+	 <input type="text" name="p_password" value=""/>
+	<br>
+	
+	
+	
+	<input type="submit"value="Submit">
+	</form>
+	
+	
+	<% } else { %>
+		<a>there seems to be an error</a>
+	<%	} %>
+
+	
+   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="./file/index.js">
+ 
+    </script>
+  </body>
+</html>
+
+
+
+
+<a href="/logout">logout</a>
