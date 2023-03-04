@@ -272,24 +272,24 @@ class File {
 
 	async findYours(username){
 		//.findOne({where: {username: username}})
-/*
+
 		let b = await Basic.findOne({where: {username: username}})
-		let c = await Host.findAll({
-			where: {id: b.id}
+
+		let basic = await Host.findAll({
+			where: {BasicId: b.id}
 		})
 
-console.log( c.map(x => x.FileId) )
-*/
+
 		let e = await Files.findAll({
-			/*
+			
 			where: {
 				id: {
-				[Op.or]: c.map(x => x.FileId)
+				[Op.or]:  basic.map(x => x.FileId)
 				}
 			}
-			*/
+			
 			})
-
+		console.log( e )
 
 		return e
 		
@@ -385,25 +385,21 @@ class Basic_Account extends Account {
 		}
 
     async validate(username, password) {
- 		let pwd = await this.password_hide(password)
 
-		let a = await this.password_simi(password, pwd)
-
-		if(a){
-			let res = await Basic.findOne({
-        where: {
-          username: username,
-        },
-      });
-
-	      	if (res == null) {
-	        return (false);
-	      }else{
-			  return(true);
-		  }
-		}else{
-				return (false);
+		let res = await Basic.findOne({
+			where: {
+				  username: username,
 			}
+		  });
+
+		  if(!res){
+return false
+		  }
+		let a = await this.password_simi(password, res.password)
+
+
+		return a 
+
 	}
 
     async create(username, password) {
