@@ -271,13 +271,38 @@ class File {
 	}
 
 	async findYours(username){
-		let e = await Basic.findOne({where: {username: username}})
+		//.findOne({where: {username: username}})
+/*
+		let b = await Basic.findOne({where: {username: username}})
+		let c = await Host.findAll({
+			where: {id: b.id}
+		})
+
+console.log( c.map(x => x.FileId) )
+*/
+		let e = await Files.findAll({
+			/*
+			where: {
+				id: {
+				[Op.or]: c.map(x => x.FileId)
+				}
+			}
+			*/
+			})
+
+
+		return e
 		
-		return (await Host.findAll({
-	where: {
-		BasicId: e.id
 	}
-}))
+
+	async find(data){
+		let a = await Files.findOne({
+			where:{ 
+			  name: data
+			}
+		  });
+
+		  return a
 	}
 
 }
