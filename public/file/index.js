@@ -145,6 +145,7 @@ for styling and html
   }
 
   document.querySelector("#txt").addEventListener("click", function () {
+    loadTable()
     file.click();
   });
 
@@ -186,20 +187,24 @@ let arr = []
   var file = document.getElementById("files");
 
   holder.ondragover = function () {
+    loadTable()
     //this.className = "hover";
     return false;
   };
   holder.ondragend = function () {
+    loadTable()
     //this.className = "";
     return false;
   };
   holder.ondrop = function (e) {
+    loadTable()
     //this.className = "";
     e.preventDefault();
     readfiles(e.dataTransfer.files);
   };
 
   file.onchange = function (e) {
+    loadTable()
     e.preventDefault();
     readfiles(e.target.files);
   };
@@ -207,7 +212,10 @@ let arr = []
 
 
 
-  allFiles.createHead('','name','type')
+allFiles.createHead('','name','type')
+
+
+
 
 function loadTable() {
   const xhttp = new XMLHttpRequest();
@@ -217,18 +225,28 @@ function loadTable() {
 data.map(function(x){
   let {name, type, url} = x
 
-  allFiles.createRow(url, [name, type])
+  if( filesDataIN.includes(name) ){
+    return;
+  }else{
+  filesDataIN.push(name)
 
+  allFiles.createRow(url, [name, type])
+  }
+  
   allFiles.doc()
 })
 
     //document.getElementById("demo").innerHTML = this.responseText;
   }
  // alert( document.location )
+
   xhttp.open("GET", `${document.location}/get`);
   //allFiles
   xhttp.send();
 }
 
-
-loadTable()
+/*
+setInterval(function() {
+  loadTable()
+},1000)
+*/

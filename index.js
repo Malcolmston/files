@@ -96,29 +96,10 @@ function icon(type) {
 
 const {
   Guest_Account,
-<<<<<<< HEAD
-Basic_Account,
-Admin_Account, File} = require("./sql.js");
-
-
-
-var express = require('express');
-var session = require("express-session");
-var formidable = require('formidable');
-var path = require('path');
-var fs = require('fs');
-var url = require("url")
-
-const file = new File()
-const guest_account = new Guest_Account()
-const basic_account = new Basic_Account()
-const admin_account = new Admin_Account()
-=======
   Basic_Account,
   Admin_Account,
   File,
 } = require("./sql.js");
->>>>>>> no_userChanges
 
 var express = require("express");
 var session = require("express-session");
@@ -127,177 +108,119 @@ var path = require("path");
 var fs = require("fs");
 var url = require("url");
 
-<<<<<<< HEAD
-var ejs = require('ejs')
-=======
 const file = new File();
-const guest_account = new Guest_Account();
+//const guest_account = new Guest_Account();
 const basic_account = new Basic_Account();
 const admin_account = new Admin_Account();
->>>>>>> no_userChanges
 
 var ejs = require("ejs");
 
 var app = express();
 
-<<<<<<< HEAD
-
-app.use(express.static('public'))
-
-const sessionMiddleware = session({
-	secret: 'mysecret',
-	resave: true,
-	saveUninitialized: true
-});
-
-=======
 app.use(express.static("public"));
 
 const sessionMiddleware = session({
-  secret: "mysecret",
+  name: "yay_session",
+  secret: "some secret this is now",
   resave: true,
-  saveUninitialized: true,
+  saveUninitialized: false,
+  cookie: { maxAge: 600000, httpOnly: false, domain: "localhost" },
 });
->>>>>>> no_userChanges
 
 app.set("view engine", "ejs");
-
-<<<<<<< HEAD
-
-app.set('view engine', 'ejs');
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 app.use(sessionMiddleware);
 
-app.get('/', (req, res) => {
-	res.status(200).render('login', {
-		code: 'sign up',
-		fail_code: req.session.username ? 'you are alredy logged in' : ''
-
-	});
+app.get("/", (req, res) => {
+  res.status(200).render("login", {
+    code: "sign up",
+    fail_code: req.session.username ? "you are alredy logged in" : "",
+  });
 });
 
-app.post('/signup', (req, res) => {
-	let { username, password } = req.body
+app.post("/signup", (req, res) => {
+  let { username, password } = req.body;
 
-	basic_account.validate(username, password).then(function(x){
-		// if there is an account with the username and password it is valid.
-		if( !x ){
-			basic_account.create(username, password).then(function(e){
-				req.session.username = username
-        req.session.type = 'basic'
-
-				res.status(200).redirect('home')
-			})
-
-
-		}else{
-      res.redirect('/')
-			res.status(403).render('login', {
-			code: 'an account with that username already exists!',
-			fail_code: 'an account with that username already exists!'
-		});
-		}
-	})
-})
-
-app.post('/login', (req, res) => {
-	let { username, password } = req.body
-  basic_account.isDeleted(username).then(function(bool){
-    if( bool ){
-      res.redirect('/')
-      res.status(403).render('login', {
-code: 'an account with that username or password no longer exists!',
-fail_code: 'The account you are trying to find an account that has been deleted!'
-});
-    }else{
-      basic_account.validate(username, password).then(function(x){
-        if( x ){
-          req.session.username = username
-
-          req.session.type = 'basic'
-
-          res.status(200).redirect('home')
-        }else{
-            admin_account.validate(username, password).then(function(x){
-            if( x ){
-                 req.session.username = username
-              req.session.type = 'admin'
-
-              res.status(200).redirect('home')
-            }else{
-              res.redirect('/')
-              res.status(402).render('login', {
-      code: 'an account with that username or password does not exist!',
-      fail_code: 'an account with that username or password does not exist!'
-    });
-            }
-
-      })
-      }
-    })
+  basic_account.validate(username, password).then(function (x) {
+    // if there is an account with the username and password it is valid.
+    if (!x) {
+      basic_account.create(username, password).then(function (e) {
+        req.session.username = username;
+        req.session.type = "basic";
+        req.session.log_type = "basic";
+        res.status(200).redirect("home");
+      });
+    } else {
+      res.redirect("/");
+      res.status(403).render("login", {
+        code: "an account with that username already exists!",
+        fail_code: "an account with that username already exists!",
+      });
     }
-  })
+  });
+});
 
-})
+app.post("/login", (req, res) => {
+  let { username, password } = req.body;
+  basic_account.isDeleted(username).then(function (bool) {
+    if (bool) {
+      res.redirect("/");
+      res.status(403).render("login", {
+        code: "an account with that username or password no longer exists!",
+        fail_code:
+          "The account you are trying to find an account that has been deleted!",
+      });
+    } else {
+      basic_account.validate(username, password).then(function (x) {
+        if (x) {
+          req.session.username = username;
 
+          req.session.log_type = "basic";
 
-app.post('/guest', (req, res) => {
-  guest_account.create().then(function(x){
-    req.session.username = 'guest'
-    req.session.type = 'guest'
+          req.session.type = "basic";
 
-    res.status(200).redirect('home')
-  }).catch( e => {
-    console.log( e )
-      res.redirect('/')
-      res.status(500).render('login', {
-			code: 'You are unable to create a guest account!',
-			fail_code: 'Mhmmmmmm You are unable to create a guest account!',
-		});
-  })
-})
+          res.status(200).redirect("home");
+        } else {
+          admin_account.validate(username, password).then(function (x) {
+            if (x) {
+              req.session.username = username;
 
+              req.session.log_type = "admin";
 
+              res.status(201).render("redirect", {});
+            } else {
+              res.redirect("/");
+              res.status(402).render("login", {
+                code: "an account with that username or password does not exist!",
+                fail_code:
+                  "an account with that username or password does not exist!",
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+});
 
-app.get('/home', (req, res) => {
-  if (!req.session.username) {
-console.log('Please enter a name')
-
-res.redirect('/')
-
-/*
-res.status(400).render('login', {
-  code: 'sign up',
-  fail_code: 'you tried to go to a page that you do not have permision to acses'
-
-});*/
-
-
-  }else{
-
-	if (req.session.username) {
-		res.render('home',{
-			type: req.session.type
-		})
-
-	} else {
-    res.redirect('/')
-
-		res.status(400).render('login', {
-			code: 'sign up',
-			fail_code: 'you tried to go to a page that you do not have permision to acses'
-
-		});
-  
-	}
-}
-})
-
+app.get("/home", (req, res) => {
+  if (req.session.username) {
+    res.render("home", {
+      type: req.session.type,
+    });
+  } else {
+    file.type = req.session.log_type
+    res.redirect("/");
+    res.status(400).render("login", {
+      code: "sign up",
+      fail_code:
+        "you tried to go to a page that you do not have permision to acses",
+    });
+  }
+});
 
 app.get('/logout', (req, res) => {
   if( req.session.type == 'guest' ){
@@ -314,145 +237,149 @@ app.get('/logout', (req, res) => {
 
 
 
-app.get('/basic/allData', async (req, res) => {
-  res.set('Content-Type', 'application/json')
+app.post("/admin", function (req, res) {
+  req.session.type = "admin";
 
-  let data = await  admin_account.getAll('basic')
+  res.status(200).redirect("home");
+});
 
-  res.send(data )
-})
+app.post("/guest", function (req, res) {
+  req.session.type = "basic";
 
-app.post('/basic/usernameChange', async (req, res) => {
-  let { password, N_username} = req.body
-let b = await basic_account.validate( req.session.username , password)
-//let a = await admin_account.validate(username, password)
+  res.status(200).redirect("home");
+});
 
-if( b){
-basic_account.update_username(req.session.username , password, N_username).then(
-  res.status(200).render('home',{
-    type: req.session.type
-  })
-)
-}else{
-  res.status(403)
-}
 
-})
 
-app.post('/basic/passwordChange', async (req, res) => {
-  let { password, N_password} = req.body
-let b = await basic_account.validate( req.session.username , password)
-//let a = await admin_account.validate(username, password)
+app.get("/basic/allData", async (req, res) => {
+  res.set("Content-Type", "application/json");
 
-if( b){
-basic_account.update_password(req.session.username , password, N_password).then(
-  res.status(200).render('home',{
-    type: req.session.type
-  })
-)
-}else{
-  res.status(403)
-}
+  let data = await admin_account.getAll("basic");
 
-})
+  res.send(data);
+});
 
-app.post('/basic/softRemove', async (req, res) => {
-  let { password} = req.body
+app.post("/basic/usernameChange", async (req, res) => {
+  let { password, N_username } = req.body;
+  let b = await basic_account.validate(req.session.username, password);
+  //let a = await admin_account.validate(username, password)
 
-    basic_account.remove(req.session.username, password).then(function(x){
-      if( x){
-        req.session.destroy()
-        res.redirect('/')
-        res.status(200).render('login', {
-          code: 'sign up',
-          fail_code: 'your account was deleted'
+  if (b) {
+    basic_account
+      .update_username(req.session.username, password, N_username)
+      .then(
+        res.status(200).render("home", {
+          type: req.session.type,
+        })
+      );
+  } else {
+    res.status(403);
+  }
+});
 
+app.post("/basic/passwordChange", async (req, res) => {
+  let { password, N_password } = req.body;
+  let b = await basic_account.validate(req.session.username, password);
+  //let a = await admin_account.validate(username, password)
+
+  if (b) {
+    basic_account
+      .update_password(req.session.username, password, N_password)
+      .then(
+        res.status(200).render("home", {
+          type: req.session.type,
+        })
+      );
+  } else {
+    res.status(403);
+  }
+});
+
+app.post("/basic/softRemove", async (req, res) => {
+  let { password } = req.body;
+
+  basic_account.remove(req.session.username, password).then(function (x) {
+    if (x) {
+      req.session.destroy();
+      res.redirect("/");
+      res.status(200).render("login", {
+        code: "sign up",
+        fail_code: "your account was deleted",
+      });
+    } else {
+      res.status(403);
+    }
+  });
+});
+
+/*
+app.get("/admin/allData", async (req, res) => {
+  res.set("Content-Type", "application/json");
+
+  let data = await admin_account.getAll("admin");
+
+  res.send(data);
+});
+
+app.post("/admin/softRemove", async (req, res) => {
+  let { password, p_username, p_password } = req.body;
+
+  admin_account
+    .soft_remove(p_username, p_password, req.session.username, password)
+    .then(function (x) {
+      if (x) {
+        res.status(200).render("home", {
+          type: req.session.type,
         });
-
-      }else{
-        res.status(403)
+      } else {
+        res.status(403);
       }
-    })
-})
+    });
+});
 
+app.post("/admin/restore", async (req, res) => {
+  let { password, p_username, p_password } = req.body;
 
+  admin_account
+    .restore(p_username, p_password, req.session.username, password)
+    .then(function (x) {
+      if (x) {
+        res.status(200).render("home", {
+          type: req.session.type,
+        });
+      } else {
+        res.status(403);
+      }
+    });
+});
 
-app.get('/admin/allData', async (req, res) => {
-  res.set('Content-Type', 'application/json')
+app.post("/admin/hardRemove", async (req, res) => {
+  let { password, p_username, p_password } = req.body;
 
-  let data = await  admin_account.getAll('admin')
-
-  res.send(data )
-})
-
-app.post('/admin/softRemove', async (req, res) => {
-  let { password, p_username, p_password} = req.body
-
-
-  admin_account.soft_remove(p_username, p_password, req.session.username , password).then(function(x){
-    if(x){
-      res.status(200).render('home',{
-        type: req.session.type
-      })
-    }else{
-      res.status(403)
-    }
-  })
-
-})
-
-app.post('/admin/restore', async (req, res) => {
-  let { password, p_username, p_password} = req.body
-
-
-  admin_account.restore(p_username, p_password, req.session.username , password).then(function(x){
-    if(x){
-      res.status(200).render('home',{
-        type: req.session.type
-      })
-    }else{
-      res.status(403)
-    }
-  })
-
-})
-
-app.post('/admin/hardRemove', async (req, res) => {
-  let { password, p_username, p_password} = req.body
-
-
-  admin_account.hard_remove(p_username, p_password, req.session.username , password).then(function(x){
-    if(x){
-      res.status(200).render('home',{
-        type: req.session.type
-      })
-    }else{
-      res.status(403)
-    }
-  })
-
-})
-
-
-
+  admin_account
+    .hard_remove(p_username, p_password, req.session.username, password)
+    .then(function (x) {
+      if (x) {
+        res.status(200).render("home", {
+          type: req.session.type,
+        });
+      } else {
+        res.status(403);
+      }
+    });
+});
+*/
 
 app.get("/home/get", async (req, res) => {
+//  var exclude = url.parse(req.url, true).query.array.split('(*),,,(*)');
 
- let all = await file.findYours(req.session.username)
+  let all = await file.findYours(req.session.username, req.session.log_type);
+
+  //console.clear()
+console.log( all )
 
   res.json({
     all: all,
-
-=======
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use(sessionMiddleware);
-
-app.get("/", (req, res) => {
-  res.status(200).render("login", {
-    code: "sign up",
-    fail_code: req.session.username ? "you are alredy logged in" : "",
   });
 });
 
@@ -556,31 +483,16 @@ app.get("/home/get", async (req, res) => {
 app.get("/home/open", async (req, res) => {
   const queryObject = url.parse(req.url, true).query;
 
-  let all = await file.find(queryObject.name)
-
-  res.setHeader('Content-Type', all.type)
-  res.end(all.rawData)
-=======
-app.get("/home/open", async (req, res) => {
-  const queryObject = url.parse(req.url, true).query;
-
   let all = await file.find(queryObject.name);
->>>>>>> no_userChanges
 
   res.setHeader("Content-Type", all.type);
   res.end(all.rawData);
 });
 
-/*
 app.post("/", function (req, res) {
   var form = new formidable.IncomingForm();
 
-<<<<<<< HEAD
-app.post('/', function (req, res){
-    var form = new formidable.IncomingForm();
-=======
   form.parse(req);
->>>>>>> no_userChanges
 
   form.on("fileBegin", function (name, file) {
     file.path = __dirname + "/uploads/" + file.name;
@@ -600,45 +512,17 @@ app.post('/', function (req, res){
       url: icon(files.mimetype.split("/")[1].trim()),
       rawData: rawData,
       flags: files.flags,
-    });
+    }, req.session.log_type);
 
-<<<<<<< HEAD
-    form.on('file', async function (name, files){
-        
-        var oldPath = files.filepath;
-			var newPath = path.join(__dirname, 'uploads')
-				+ '/' + (files.name || files.originalFilename)
-			var rawData = fs.readFileSync(oldPath)
+    //res.setHeader('Content-Type',files.mimetype)
+    //res.end(rawData);
 
-
-              let x = await file.create(req.session.username,{ 
-                name:  (files.name || files.originalFilename), 
-                type: files.mimetype,
-                url: icon(files.mimetype.split('/')[1].trim()),
-                rawData: rawData,
-                flags: files.flags
-              });
-
-              
-              
-              //res.setHeader('Content-Type',files.mimetype)
-             //res.end(rawData);
-            
-
-              /*
+    /*
 			fs.writeFile(newPath, rawData, function(err) {
 				if (err) console.log(err)
 			 console.log("Successfully uploaded")
 			})
 			*/
-      //  console.log( file );
-    });
-=======
-    //res.setHeader('Content-Type',files.mimetype)
-    //res.end(rawData);
->>>>>>> no_userChanges
-
-   
     //  console.log( file );
   });
 
@@ -646,4 +530,6 @@ app.post('/', function (req, res){
   //res.redirect('/');
 });
 */
+app.listen(3000);
+
 app.listen(3000);
