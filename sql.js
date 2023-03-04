@@ -272,6 +272,7 @@ class File {
 
 	async findYours(username){
 		//.findOne({where: {username: username}})
+<<<<<<< HEAD
 
 		let b = await Basic.findOne({where: {username: username}})
 
@@ -290,6 +291,26 @@ class File {
 			
 			})
 		console.log( e )
+=======
+/*
+		let b = await Basic.findOne({where: {username: username}})
+		let c = await Host.findAll({
+			where: {id: b.id}
+		})
+
+console.log( c.map(x => x.FileId) )
+*/
+		let e = await Files.findAll({
+			/*
+			where: {
+				id: {
+				[Op.or]: c.map(x => x.FileId)
+				}
+			}
+			*/
+			})
+
+>>>>>>> 6beffc3... new sql
 
 		return e
 		
