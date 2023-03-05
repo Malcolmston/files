@@ -381,103 +381,7 @@ console.log( all )
   res.json({
     all: all,
   });
-});
 
-app.post("/signup", (req, res) => {
-  let { username, password } = req.body;
-
-  basic_account.validate(username, password).then(function (x) {
-    // if there is an account with the username and password it is valid.
-    if (!x) {
-      basic_account.create(username, password).then(function (e) {
-        req.session.username = username;
-        req.session.type = "basic";
-
-        res.status(200).redirect("home");
-      });
-    } else {
-      res.redirect("/");
-      /*
-			res.status(403).render('login', {
-			code: 'an account with that username already exists!',
-			fail_code: 'an account with that username already exists!'
-    });
-    */
-    }
-  });
-});
-
-app.post("/login", (req, res) => {
-  let { username, password } = req.body;
-  basic_account.isDeleted(username).then(function (bool) {
-    if (bool) {
-    //  res.redirect("/");
-      res.status(403).render("login", {
-        code: "an account with that username or password no longer exists!",
-        fail_code:
-          "The account you are trying to find an account that has been deleted!",
-      });
-    } else {
-      basic_account.validate(username, password).then(function (x) {
-        if (x) {
-          req.session.username = username;
-          req.session.type = "basic";
-          res.redirect("/home");
-        } else {
-          //res.redirect("/");
-          res.status(402).render("login", {
-            code: "an account with that username or password does not exist!",
-            fail_code:
-              "an account with that username or password does not exist!",
-          });
-
-        }
-      });
-    }
-  });
-});
-
-/*
-app.post('/guest', (req, res) => {
-  guest_account.create().then(function(x){
-    req.session.username = 'guest'
-    req.session.type = 'guest'
-
-    res.status(200).redirect('home')
-  }).catch( e => {
-    console.log( e )
-      res.redirect('/')
-      res.status(500).render('login', {
-			code: 'You are unable to create a guest account!',
-			fail_code: 'Mhmmmmmm You are unable to create a guest account!',
-		});
-  })
-})
-*/
-
-app.get("/logout", (req, res) => {
-  if (req.session.type == "guest") {
-    guest_account.removeNow().then(function () {
-      req.session.destroy();
-      res.redirect("/");
-      //return;
-    });
-  } else {
-    req.session.destroy();
-    res.redirect("/");
-  }
-});
-
-app.get("/home/get", async (req, res) => {
-  let all = await file.findYours(req.session.username);
-
-  res.json({
-    all: all,
->>>>>>> no_userChanges
-  });
-});
-
-<<<<<<< HEAD
 });
 
 app.get("/home/open", async (req, res) => {
@@ -529,7 +433,5 @@ app.post("/", function (req, res) {
   res.status(204).send();
   //res.redirect('/');
 });
-*/
-app.listen(3000);
 
 app.listen(3000);
