@@ -86,45 +86,6 @@ const Basic = sequelize.define(
   }
 );
 
-const Admin = sequelize.define(
-  "Admin",
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    username: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-      unique: true,
-    },
-
-    showname: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      unique: false,
-    },
-
-    password: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-      unique: false,
-    },
-
-    type: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-      unique: false,
-    },
-  },
-  {
-    timestamps: true,
-    deletedAt: "deletedAt",
-    paranoid: true,
-  }
-);
-
 const Files = sequelize.define(
   "Files",
   {
@@ -185,10 +146,6 @@ const Host = sequelize.define(
 // connects files and Basic
 Files.belongsToMany(Basic, { through: { model: Host, unique: false } });
 Basic.belongsToMany(Files, { through: { model: Host, unique: false } });
-
-// connects files and Admin
-Files.belongsToMany(Admin, { through: { model: Host, unique: false } });
-Admin.belongsToMany(Files, { through: { model: Host, unique: false } });
 
 // connects files and Guest
 Files.belongsToMany(Guest, { through: { model: Host, unique: false } });
@@ -265,10 +222,8 @@ class File {
     if (username) {
       let a;
 
-      if (this.type == "basic") {
+      if (this.type == "basic" || this.type == "admin") {
         a = await Basic.findOne({ where: { username: username } });
-      } else if (this.type == "admin") {
-        a = await Admin.findOne({ where: { username: username } });
       } else if (this.type == "guest") {
         a = await Guest.findOne({ where: { username: username } });
       } else {
@@ -301,10 +256,8 @@ class File {
 
     this.type = type;
 
-    if (this.type == "basic") {
+    if (this.type == "basic" || this.type == "admin") {
       b = await Basic.findOne({ where: { username: username } });
-    } else if (this.type == "admin") {
-      b = await Admin.findOne({ where: { username: username } });
     } else if (this.type == "guest") {
       b = await Guest.findOne({ where: { username: username } });
     } else {
@@ -313,13 +266,9 @@ class File {
 
     let basic;
 
-    if (this.type == "basic") {
+    if (this.type == "basic" || "admin") {
       basic = await Host.findAll({
         where: { BasicId: b.id },
-      });
-    } else if (this.type == "admin") {
-      basic = await Host.findAll({
-        where: { AdminId: b.id },
       });
     } else if (this.type == "guest") {
       basic = await Host.findAll({
@@ -337,12 +286,10 @@ class File {
 
     let e = await Files.findAll({
       where: {
-
         id: {
           [Op.or]: basic.map((x) => x.FileId),
-        }
-      }
-      
+        },
+      },
     });
 
     return e;
@@ -408,6 +355,7 @@ class Basic_Account extends Account {
     let pf = await Basic.findOne({
       where: {
         username: username,
+        type: "basic",
       },
       paranoid: true,
     });
@@ -415,6 +363,7 @@ class Basic_Account extends Account {
     let pt = await Basic.findOne({
       where: {
         username: username,
+        type: "basic",
       },
       paranoid: false,
     });
@@ -434,6 +383,7 @@ class Basic_Account extends Account {
     let res = await Basic.findOne({
       where: {
         username: username,
+        type: "basic",
       },
     });
 
@@ -465,7 +415,7 @@ class Basic_Account extends Account {
 
   async update_username(username, c) {
     let d = await Basic.update(
-      { username: c },
+      { username: c, type: "basic" },
       {
         where: { username: username },
       }
@@ -480,7 +430,7 @@ class Basic_Account extends Account {
     let d = await Basic.update(
       { password: e },
       {
-        where: { username: username },
+        where: { username: username, type: "basic" },
       }
     );
 
@@ -495,9 +445,10 @@ class Admin_Account extends Account {
 
   // checks the Admin table
   async validate(username, password) {
-    let res = await Admin.findOne({
+    let res = await Basic.findOne({
       where: {
         username: username,
+        type: "admin",
       },
     });
 
@@ -519,6 +470,7 @@ class Admin_Account extends Account {
       let res = await Basic.findOne({
         where: {
           username: username,
+          type: "basic",
         },
       });
 
@@ -537,7 +489,7 @@ class Admin_Account extends Account {
     let reg = /[a-zA-Z0-9!@#$%^&*]{6,16}$/;
 
     if (reg.test(password)) {
-      let a = await Admin.create({
+      let a = await Basic.create({
         username: username,
         password: p,
         type: "admin",
@@ -555,7 +507,9 @@ class Admin_Account extends Account {
       let i = await this.check(username, password);
 
       if (i) {
-        let r = await Basic.destroy({ where: { username: username } });
+        let r = await Basic.destroy({
+          where: { username: username, type: "basic" },
+        });
 
         return r;
       } else {
@@ -573,7 +527,7 @@ class Admin_Account extends Account {
 
       if (i) {
         let r = await Basic.destroy({
-          where: { username: username },
+          where: { username: username, type: "basic" },
           force: true,
         });
 
@@ -594,6 +548,7 @@ class Admin_Account extends Account {
       let r = await Basic.restore({
         where: {
           username: username,
+          type: "basic",
         },
       });
 
@@ -607,7 +562,7 @@ class Admin_Account extends Account {
     let d = await Basic.update(
       { username: c },
       {
-        where: { username: username },
+        where: { username: username, type: "basic" },
       }
     );
 
@@ -653,9 +608,9 @@ class Admin_Account extends Account {
 (async function () {
   await sequelize.sync({ force: false });
 
-  //let b = new Admin_Account();
+  let b = new Admin_Account();
 
-  // b.create("Malcolm", "MalcolmStoneAdmin22").then(console.log);
+  b.create("Malcolm", "MalcolmStoneAdmin22");
 })();
 
 module.exports = {
