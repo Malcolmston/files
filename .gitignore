@@ -5,3 +5,5 @@
 /uploads
 /uses.sqlite
 public/.DS_Store
+
+*.icloud
