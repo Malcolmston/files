@@ -107,6 +107,7 @@ var formidable = require("formidable");
 var path = require("path");
 var fs = require("fs");
 var url = require("url");
+var cors = require('cors')
 
 const file = new File();
 //const guest_account = new Guest_Account();
@@ -129,9 +130,11 @@ const sessionMiddleware = session({
 
 app.set("view engine", "ejs");
 
+app.use(cors())
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(sessionMiddleware);
 
 app.get("/", (req, res) => {
@@ -167,7 +170,7 @@ app.post("/login", (req, res) => {
   let { username, password } = req.body;
   basic_account.isDeleted(username).then(function (bool) {
     if (bool) {
-      res.redirect("/");
+      //res.redirect("/");
       res.status(403).render("login", {
         code: "an account with that username or password no longer exists!",
         fail_code:
@@ -186,11 +189,19 @@ app.post("/login", (req, res) => {
         } else {
           admin_account.validate(username, password).then(function (x) {
             if (x) {
+        
+              admin_account.keyFrom( req.body.username, false).then(function (ans){
+                req.session.api = ans 
               req.session.username = username;
 
               req.session.log_type = "admin";
 
               res.status(201).render("redirect", {});
+              })
+              
+
+             
+            
             } else {
               res.redirect("/");
               res.status(402).render("login", {
@@ -251,13 +262,6 @@ app.post("/guest", function (req, res) {
 
 
 
-app.get("/basic/allData", async (req, res) => {
-  res.set("Content-Type", "application/json");
-
-  let data = await admin_account.getAll("basic");
-
-  res.send(data);
-});
 
 app.post("/basic/usernameChange", async (req, res) => {
   let { password, N_username } = req.body;
@@ -312,63 +316,187 @@ app.post("/basic/softRemove", async (req, res) => {
   });
 });
 
-/*
-app.get("/admin/allData", async (req, res) => {
+
+
+
+
+app.post("/admin/allData", async (req, res) => {
   res.set("Content-Type", "application/json");
-
-  let data = await admin_account.getAll("admin");
-
-  res.send(data);
+   admin_account.keyFrom( req.session.username , false).then(function (api){ 
+  
+    admin_account.validateKey(api, req.session.username).then(async (e) => {
+   if(e){
+     let data = await admin_account.getAll("basic");
+   
+     res.send(data);
+   }else{
+     res.status(500).send({
+       error: "Invalid api keys were given"
+     });
+   }
+    })
+   })
 });
 
 app.post("/admin/softRemove", async (req, res) => {
-  let { password, p_username, p_password } = req.body;
+  let { p_username, json} = req.body;
 
-  admin_account
-    .soft_remove(p_username, p_password, req.session.username, password)
-    .then(function (x) {
-      if (x) {
-        res.status(200).render("home", {
-          type: req.session.type,
-        });
-      } else {
-        res.status(403);
-      }
+  admin_account.keyFrom( req.session.username, false).then(async function (api){ 
+  
+ let x = await admin_account.soft_remove(api,req.session.username, p_username)
+
+ if(json){
+  if (x) {
+    res.status(200).json({
+      type: 'soft remove',
+      error: x ? false : true
+    })
+  } else {
+    res.status(500).json({
+      error: "Invalid api keys were given"
     });
-});
+  }
+ }else{
+  if (x) {
+    res.status(200).render("home", {
+      type: req.session.type,
+    });
+  
+  } else {
+    res.status(500);
+  }
+ }
+  })
+
+
+})
 
 app.post("/admin/restore", async (req, res) => {
-  let { password, p_username, p_password } = req.body;
+  let {p_username, json} = req.body;
 
-  admin_account
-    .restore(p_username, p_password, req.session.username, password)
-    .then(function (x) {
+  admin_account.keyFrom( req.session.username, false).then(async function (api){ 
+
+  let x = await admin_account.restore(api,req.session.username, p_username)
+
+
+
+  if(json){
+      if (x) {
+        res.status(200).json({
+          type: 'restored',
+          error: x ? false : true
+        })
+      } else {
+        res.status(500).json({
+          error: "Invalid api keys were given"
+        });
+      }
+    }else{
       if (x) {
         res.status(200).render("home", {
           type: req.session.type,
         });
       } else {
-        res.status(403);
+        res.status(500)
       }
-    });
+    }
+  })
+    
 });
 
 app.post("/admin/hardRemove", async (req, res) => {
-  let { password, p_username, p_password } = req.body;
+  let {  p_username, json} = req.body;
+  admin_account.keyFrom( req.session.username, false).then(async function(api){ 
+ let x = await admin_account.hard_remove(api,req.session.username, p_username)
 
-  admin_account
-    .hard_remove(p_username, p_password, req.session.username, password)
-    .then(function (x) {
-      if (x) {
-        res.status(200).render("home", {
-          type: req.session.type,
-        });
-      } else {
-        res.status(403);
-      }
+ if(json){
+  if (x) {
+    res.status(200).json({
+      type: 'soft remove',
+      error: x ? false : true
+    })
+  } else {
+    res.status(500).json({
+      error: "Invalid api keys were given"
     });
+  }
+ }else{
+  if (x) {
+    res.status(200).render("home", {
+      type: req.session.type,
+    });
+  
+  } else {
+    res.status(500);
+  }
+ }
+})
 });
-*/
+
+app.post("/admin/changeUsername", async (req, res) => {
+  let {  old_username,new_username, json} = req.body;
+  admin_account.keyFrom( req.session.username, false).then(async function(api){ 
+
+ let x = await admin_account.update_username(api,req.session.username, old_username, new_username)
+
+ if(json){
+  if (x) {
+    res.status(200).json({
+      type: 'update password',
+      error: x ? false : true
+    })
+  } else {
+    res.status(500).json({
+      error: "Invalid api keys were given"
+    });
+  }
+ }else{
+  if (x) {
+    res.status(200).render("home", {
+      type: req.session.type,
+    });
+  
+  } else {
+    res.status(500);
+  }
+ }
+})
+});
+
+app.post("/admin/changePassword", async (req, res) => {
+  let {  new_password, json} = req.body;
+  admin_account.keyFrom( req.session.username, false).then(async function(api){ 
+
+ let x = await admin_account.update_password(api,req.session.username, new_password)
+
+ if(json){
+  if (x) {
+    res.status(200).json({
+      type: 'update password',
+      error: x ? false : true
+    })
+  } else {
+    res.status(500).json({
+      error: "Invalid api keys were given"
+    });
+  }
+ }else{
+  if (x) {
+    res.status(200).render("home", {
+      type: req.session.type,
+    });
+  
+  } else {
+    res.status(500);
+  }
+ }
+})
+});
+
+
+
+
+
 
 app.get("/home/get", async (req, res) => {
 //  var exclude = url.parse(req.url, true).query.array.split('(*),,,(*)');
