@@ -1,3 +1,9 @@
+
+
+
+
+
+
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 
@@ -77,6 +83,11 @@ const Basic = sequelize.define(
       allowNull: false,
       unique: false,
     },
+
+    api: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    }
   },
   {
     timestamps: true,
@@ -142,6 +153,18 @@ const Host = sequelize.define(
   },
   {}
 );
+
+function dec2hex (dec) {
+  return dec.toString(16).padStart(2, "0")
+}
+
+// generateId :: Integer -> String
+function generateId (len) {
+  var arr = new Uint8Array((len || 40) / 2)
+  crypto.getRandomValues(arr)
+  return Array.from(arr, dec2hex).join('')
+}
+
 
 // connects files and Basic
 Files.belongsToMany(Basic, { through: { model: Host, unique: false } });
@@ -402,6 +425,7 @@ class Basic_Account extends Account {
       username: username,
       password: p,
       type: "basic",
+      api: generateId(29)
     });
 
     return a;
@@ -443,7 +467,14 @@ class Admin_Account extends Account {
     super();
   }
 
-  // checks the Admin table
+
+  /**
+   * checks the Admin table for a user by username and a password
+   * @param {String} username a admin users username
+   * @param {String} password a admin users password
+   * @returns {Boolean} true if the username is valid and the passwords hash matches the hash of the password passed.
+   * false if the username is invalid and the passwords hash does not match the hash of the password passed
+   */
   async validate(username, password) {
     let res = await Basic.findOne({
       where: {
@@ -460,8 +491,70 @@ class Admin_Account extends Account {
     return a;
   }
 
-  // checks the Basic table
-  async check(username, password) {
+  /**
+   * 
+   * @param {String} username a admin users username
+   * @param {String | Boolean}  a admin users password, however, if not provided it will be assumed
+   * @returns {Boolean | String} returns false if the username and password do not match any users in the database.
+   * returns a {String} if a user exists; 
+   */
+  async keyFrom(username, password) {
+    let res = await this.validate(username, password)
+
+    if(!password){
+      let value = await Basic.findOne({
+        where: {
+          username: username,
+        }
+      })
+  
+      if( value === null ) {
+        return false;
+      }else{
+        return value.api;
+            }
+    }else{
+
+    if(res){
+    let value = await Basic.findOne({
+      where: {
+        username: username,
+      }
+    })
+
+    if( value === null ) {
+return false;
+    }else{
+return value.api;
+    }
+  }else{
+    return false;
+  }
+}
+
+  }
+
+
+  /**
+   * checks a users api key by checking the username. The users api key is found from the admin section
+   * @param {String} key is a api key
+   * @param {String} username a admin users username
+   * @param {Boolean} paranoid if on will check deleted users, and if off it will not check deleted users
+   * @returns {Boolean} true if the key can be validated, otherwise it returns false
+   */
+  async validateKey(key,username, paranoid=false) {
+    let res = await Basic.findOne({where: {api: key, username: username, type:"admin" },  paranoid: paranoid})
+
+    return !(!res)
+  }
+  /**
+   * validates a user from the Basic table
+   * @param {String} username username a basic users username
+   * @param {String} password any a basic password witch is converterd to a has then compaired
+   * @param {Boolean} paranoid checks deleted users if true but, only checks non deleted users if false
+   * @returns {Boolean} true if the usrname and password is valid, otherwise it will return false
+   */
+  async check(username, password, paranoid=false) {
     let pwd = await this.password_hide(password);
 
     let a = await this.password_simi(password, pwd);
@@ -472,6 +565,7 @@ class Admin_Account extends Account {
           username: username,
           type: "basic",
         },
+        paranoid: paranoid
       });
 
       if (res == null) {
@@ -493,6 +587,7 @@ class Admin_Account extends Account {
         username: username,
         password: p,
         type: "admin",
+        api: generateId(58)
       });
 
       return a;
@@ -501,56 +596,51 @@ class Admin_Account extends Account {
     }
   }
 
-  async soft_remove(username, password, Busername, Bpassword) {
-    let a = this.validate(Busername, Bpassword);
-    if (a) {
-      let i = await this.check(username, password);
+  async soft_remove(key,username, there_user) {
+    let a = await this.validateKey(key,username);
+    if( !(!a) ){
 
-      if (i) {
-        let r = await Basic.destroy({
-          where: { username: username, type: "basic" },
-        });
+      let r = await Basic.destroy({
+        where: { username: there_user, type: "basic" },
+      });
 
-        return r;
-      } else {
-        return false;
-      }
-    } else {
-      return false;
+      return true
+
+    }else{
+      return false
     }
+       
+
+       
   }
 
-  async hard_remove(username, password, Busername, Bpassword) {
-    let a = this.validate(Busername, Bpassword);
-    if (a) {
-      let i = await this.check(username, password);
-
-      if (i) {
-        let r = await Basic.destroy({
-          where: { username: username, type: "basic" },
-          force: true,
-        });
-
-        return r;
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
+  async hard_remove(key,username, there_user) {
+    let a = await this.validateKey(key,username);
+        if(  !(!a) ){
+    
+          let r = await Basic.destroy({
+            where: { username: there_user, type: "basic" },
+            force: true,
+          });
+    
+          return true
+    
+        }else{
+    return false
+        }
+           
   }
 
-  async restore(username, password, Yusername, Ypassword) {
-    let c1 = this.check(username, password);
-    let c2 = this.validate(Yusername, Ypassword);
+  async restore(key,username, there_user) {
+    let c2 = await this.validateKey(key,username);
 
-    if (c1 && c2) {
+    if (!(!c2) ) {
       let r = await Basic.restore({
         where: {
-          username: username,
-          type: "basic",
-        },
-      });
+          username: there_user,
+          type: "basic"
+        }
+            });
 
       return true;
     } else {
@@ -558,28 +648,42 @@ class Admin_Account extends Account {
     }
   }
 
-  async update_username(username, c) {
+  async update_username(key, username, old_username, new_username) {
+    let c2 = await this.validateKey(key,username);
+
+    if( !(!c2) ){
     let d = await Basic.update(
-      { username: c },
+      { username: new_username   },
       {
-        where: { username: username, type: "basic" },
+        where: { username: old_username, type: "basic" },
       }
     );
+  
 
     return d;
+    }else{
+      return false
+    }
   }
 
-  async update_password(username, c) {
-    let e = await this.password_hide(c.toString());
+  async update_password(api, curr_username, new_password){
+    let c2 = await this.validateKey(key,curr_username);
 
+    let pwd = await this.password_hide(new_password)
+
+    if( !(!c2) ){
     let d = await Basic.update(
-      { password: e },
+      { password: pwd   },
       {
-        where: { username: username },
+        where: { username: curr_username, type: "basic" },
       }
     );
+  
 
     return d;
+    }else{
+      return false
+    }
   }
 
   async getAll(a) {
@@ -588,6 +692,7 @@ class Admin_Account extends Account {
     if (a == "basic") {
       all = await Basic.findAll({
         type: QueryTypes.SELECT,
+        paranoid: false
       });
     } else if (a == "guest") {
       all = await Guest.findAll({
@@ -608,10 +713,10 @@ class Admin_Account extends Account {
 (async function () {
   await sequelize.sync({ force: false });
 
-  let b = new Admin_Account();
-
-  b.create("Malcolm", "MalcolmStoneAdmin22");
+  //let b = new Admin_Account();
+ //b.create("Malcolm", "MalcolmStoneAdmin22");
 })();
+
 
 module.exports = {
   Guest_Account,
